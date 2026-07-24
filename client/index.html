@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#003366" />
+    <meta name="description" content="Vestas est le leader mondial du secteur de l'énergie éolienne. Conçoit, fabrique, installe et entretient des éoliennes terrestres et offshore dans le monde entier. Investissez et générez des revenus quotidiens." />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Vestas - Investissement Éolien" />
+    <meta property="og:description" content="Vestas est le leader mondial du secteur de l'énergie éolienne. Conçoit, fabrique, installe et entretient des éoliennes terrestres et offshore dans le monde entier. Investissez et générez des revenus quotidiens." />
+    <meta property="og:url" content="https://vestas.replit.app" />
+    <meta property="og:image" content="https://vestas.replit.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Vestas Investissement" />
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vestas - Investissement Éolien" />
+    <meta name="twitter:description" content="Vestas est le leader mondial du secteur de l'énergie éolienne. Conçoit, fabrique, installe et entretient des éoliennes terrestres et offshore dans le monde entier. Investissez et générez des revenus quotidiens." />
+    <meta name="twitter:image" content="https://vestas.replit.app/og-image.png" />
+    
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Capture install prompt as early as possible before React mounts
+      window._installPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window._installPrompt = e;
+      });
+      window.addEventListener('appinstalled', function() {
+        window._appInstalled = true;
+      });
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Vestas - Investissement Éolien</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

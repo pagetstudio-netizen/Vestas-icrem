@@ -1,0 +1,2 @@
+- [Vestas Platform Setup](vestas-platform.md) — Platform rebranded from Intel/Jollibee → Vestas (wind energy). Key colors, assets, and DB quirks documented.
+- [Git shallow push recovery](git-shallow-push.md) — A missing parent in a shallow Replit clone can make GitHub reject an otherwise valid first push.
