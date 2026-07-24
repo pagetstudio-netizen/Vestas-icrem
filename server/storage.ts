@@ -476,7 +476,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    for (const [userId, totalEarnings] of userEarnings.entries()) {
+    for (const [userId, totalEarnings] of Array.from(userEarnings.entries())) {
       try {
         const freshUser = await this.getUser(userId);
         if (freshUser) {

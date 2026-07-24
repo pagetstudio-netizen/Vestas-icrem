@@ -25,6 +25,16 @@ function getClientKey(req: Request): string {
   return ip;
 }
 
+function getRouteId(req: Request): number {
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+  const parsedId = Number.parseInt(id, 10);
+  if (!Number.isInteger(parsedId)) {
+    throw new Error("Identifiant invalide");
+  }
+  return parsedId;
+}
+
 function checkBruteForce(req: Request, res: Response): boolean {
   const key = getClientKey(req);
   const now = Date.now();
@@ -99,15 +109,20 @@ export async function registerRoutes(
   // Trust proxy for production HTTPS (Replit deployment)
   app.set("trust proxy", 1);
 
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (!sessionSecret && process.env.NODE_ENV === "production") {
+    throw new Error("SESSION_SECRET doit être configurée en production");
+  }
+
   app.use(
     session({
       store: new PgSession({
-        conString: process.env.DATABASE_URL,
+        conString: process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL,
         tableName: "session",
         createTableIfMissing: false,
         pruneSessionInterval: 60 * 60,
       }),
-      secret: process.env.SESSION_SECRET || "fb2e4a19c3d87b650a12e4f98c23d17a84b6e9c5f2301a8d7bc4e506a90f3812",
+      secret: sessionSecret || "development-only-session-secret",
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -271,7 +286,7 @@ export async function registerRoutes(
 
   app.post("/api/products/:id/purchase", requireAuth, async (req, res) => {
     try {
-      const productId = parseInt(req.params.id);
+      const productId = getRouteId(req);
       const product = await storage.getProduct(productId);
       
       if (!product) {
@@ -291,7 +306,7 @@ export async function registerRoutes(
 
   app.post("/api/products/:id/claim-free", requireAuth, async (req, res) => {
     try {
-      const productId = parseInt(req.params.id);
+      const productId = getRouteId(req);
       const product = await storage.getProduct(productId);
       
       if (!product || !product.isFree) {
@@ -504,7 +519,7 @@ export async function registerRoutes(
 
   app.post("/api/staking/purchase/:id", requireAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       const staking = await storage.purchaseStaking(req.session.userId!, id);
       res.json(staking);
     } catch (error: any) {
@@ -555,7 +570,7 @@ export async function registerRoutes(
 
   app.put("/api/admin/staking/products/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       const { name, description, price, returnAmount, lockDays, launchDate, imageUrl, isActive } = req.body;
       const sp = await storage.updateStakingProduct(id, {
         name, description,
@@ -573,7 +588,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/staking/products/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deleteStakingProduct(parseInt(req.params.id));
+      await storage.deleteStakingProduct(getRouteId(req));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -634,7 +649,7 @@ export async function registerRoutes(
 
   app.put("/api/admin/payment-numbers/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       const { ownerName, phone, operatorName, country, logoUrl, isActive } = req.body;
       const num = await storage.updatePaymentNumber(id, { ownerName, phone, operatorName, country, logoUrl, isActive });
       res.json(num);
@@ -645,7 +660,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/payment-numbers/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deletePaymentNumber(parseInt(req.params.id));
+      await storage.deletePaymentNumber(getRouteId(req));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -759,7 +774,7 @@ export async function registerRoutes(
   // Verify payment status (Soleaspay)
   app.get("/api/deposits/:id/verify", requireAuth, async (req, res) => {
     try {
-      const depositId = parseInt(req.params.id);
+      const depositId = getRouteId(req);
       const deposit = await storage.getDeposit(depositId);
       
       if (!deposit) {
@@ -950,7 +965,7 @@ export async function registerRoutes(
 
   app.delete("/api/wallets/:id", requireAuth, async (req, res) => {
     try {
-      await storage.deleteWallet(parseInt(req.params.id));
+      await storage.deleteWallet(getRouteId(req));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -959,7 +974,7 @@ export async function registerRoutes(
 
   app.patch("/api/wallets/:id/default", requireAuth, async (req, res) => {
     try {
-      await storage.setDefaultWallet(req.session.userId!, parseInt(req.params.id));
+      await storage.setDefaultWallet(req.session.userId!, getRouteId(req));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -997,7 +1012,7 @@ export async function registerRoutes(
 
   app.post("/api/tasks/:id/claim", requireAuth, async (req, res) => {
     try {
-      await storage.claimTask(req.session.userId!, parseInt(req.params.id));
+      await storage.claimTask(req.session.userId!, getRouteId(req));
       res.json({ success: true });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -1200,7 +1215,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/deposits/:id/approve", requireAdmin, async (req, res) => {
     try {
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(getRouteId(req), {
         status: "approved",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -1232,7 +1247,7 @@ export async function registerRoutes(
   app.post("/api/admin/deposits/:id/reject", requireAdmin, async (req, res) => {
     try {
       const { ban } = req.body;
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(getRouteId(req), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -1292,7 +1307,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/withdrawals/:id/approve", requireAdmin, async (req, res) => {
     try {
-      const withdrawalId = parseInt(req.params.id);
+      const withdrawalId = getRouteId(req);
       const existingWithdrawal = await storage.getWithdrawals();
       const withdrawalData = existingWithdrawal.find(w => w.id === withdrawalId);
       
@@ -1315,7 +1330,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/withdrawals/:id/reject", requireAdmin, async (req, res) => {
     try {
-      const withdrawal = await storage.updateWithdrawal(parseInt(req.params.id), {
+      const withdrawal = await storage.updateWithdrawal(getRouteId(req), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -1355,7 +1370,7 @@ export async function registerRoutes(
 
   app.get("/api/admin/users/:id/team", requireAdmin, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = getRouteId(req);
       const team = await storage.getDetailedTeam(userId);
       res.json(team);
     } catch (error: any) {
@@ -1365,7 +1380,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/users/:id/:action", requireAdmin, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = getRouteId(req);
       const action = req.params.action;
       const { value } = req.body;
       const adminUser = await storage.getUser(req.session.userId!);
@@ -1480,7 +1495,7 @@ export async function registerRoutes(
 
   app.get("/api/admin/users/:id/products", requireAdmin, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = getRouteId(req);
       const userProductsList = await storage.getAllUserProducts(userId);
       res.json(userProductsList.map(up => ({
         id: up.userProduct.id,
@@ -1527,7 +1542,7 @@ export async function registerRoutes(
 
   app.patch("/api/admin/products/:id", requireAdmin, async (req, res) => {
     try {
-      const product = await storage.updateProduct(parseInt(req.params.id), req.body);
+      const product = await storage.updateProduct(getRouteId(req), req.body);
       await storage.logAdminAction(req.session.userId!, "update_product", null, `Produit ${product.id} modifié`);
       res.json(product);
     } catch (error: any) {
@@ -1537,7 +1552,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/products/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       await storage.deleteProduct(id);
       await storage.logAdminAction(req.session.userId!, "delete_product", null, `Produit ${id} supprimé`);
       res.json({ success: true });
@@ -1570,7 +1585,7 @@ export async function registerRoutes(
 
   app.patch("/api/admin/channels/:id", requireAdmin, async (req, res) => {
     try {
-      const channel = await storage.updatePaymentChannel(parseInt(req.params.id), {
+      const channel = await storage.updatePaymentChannel(getRouteId(req), {
         ...req.body,
         modifiedBy: req.session.userId,
       });
@@ -1583,7 +1598,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/channels/:id", requireAdmin, async (req, res) => {
     try {
-      await storage.deletePaymentChannel(parseInt(req.params.id));
+      await storage.deletePaymentChannel(getRouteId(req));
       await storage.logAdminAction(req.session.userId!, "delete_channel", null, `Canal supprimé`);
       res.json({ success: true });
     } catch (error: any) {
@@ -1677,7 +1692,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/gift-codes/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       await storage.deleteGiftCode(id);
       await storage.logAdminAction(req.session.userId!, "delete_gift_code", null, `Code cadeau supprimé: #${id}`);
       res.json({ success: true });
@@ -1776,7 +1791,7 @@ export async function registerRoutes(
 
   app.put("/api/admin/countries/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       const { code, name, currency, phonePrefix, operators, isActive } = req.body;
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
@@ -1793,7 +1808,7 @@ export async function registerRoutes(
 
   app.delete("/api/admin/countries/:id", requireAdmin, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = getRouteId(req);
       await storage.deleteCountry(id);
       res.json({ success: true });
     } catch (error: any) {
@@ -1824,7 +1839,7 @@ export async function registerRoutes(
 
   app.post("/api/banker/deposits/:id/approve", requireBanker, async (req, res) => {
     try {
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(getRouteId(req), {
         status: "approved",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -1844,7 +1859,7 @@ export async function registerRoutes(
 
   app.post("/api/banker/deposits/:id/reject", requireBanker, async (req, res) => {
     try {
-      const deposit = await storage.updateDeposit(parseInt(req.params.id), {
+      const deposit = await storage.updateDeposit(getRouteId(req), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -1860,9 +1875,9 @@ export async function registerRoutes(
   app.post("/api/banker/withdrawals/:id/approve", requireBanker, async (req, res) => {
     try {
       const allWithdrawals = await storage.getWithdrawals();
-      const withdrawalData = allWithdrawals.find(w => w.id === parseInt(req.params.id));
+      const withdrawalData = allWithdrawals.find(w => w.id === getRouteId(req));
       if (!withdrawalData) return res.status(404).json({ message: "Retrait non trouvé" });
-      const withdrawal = await storage.updateWithdrawal(parseInt(req.params.id), {
+      const withdrawal = await storage.updateWithdrawal(getRouteId(req), {
         status: "approved",
         processedAt: new Date(),
         processedBy: req.session.userId,
@@ -1876,7 +1891,7 @@ export async function registerRoutes(
 
   app.post("/api/banker/withdrawals/:id/reject", requireBanker, async (req, res) => {
     try {
-      const withdrawal = await storage.updateWithdrawal(parseInt(req.params.id), {
+      const withdrawal = await storage.updateWithdrawal(getRouteId(req), {
         status: "rejected",
         processedAt: new Date(),
         processedBy: req.session.userId,

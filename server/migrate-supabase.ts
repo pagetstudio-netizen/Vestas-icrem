@@ -308,7 +308,11 @@ async function run() {
     // ── Create OLD super admin (preserve existing) ──
     const existingOld = await client.query(`SELECT id FROM users WHERE phone = '99935673'`);
     if (existingOld.rows.length === 0) {
-      const oldHash = await bcrypt.hash("AAbb11##", 12);
+      const migrationAdminPassword = process.env.ADMIN_PASSWORD;
+      if (!migrationAdminPassword) {
+        throw new Error("ADMIN_PASSWORD must be set before creating the migrated admin account");
+      }
+      const oldHash = await bcrypt.hash(migrationAdminPassword, 12);
       await client.query(
         `INSERT INTO users (full_name, phone, country, password, referral_code, balance, is_admin, is_super_admin, admin_pin)
          VALUES ('Super Admin','99935673','TD',$1,'ADMIN1','0',true,true,'9993')`,
@@ -320,21 +324,19 @@ async function run() {
     // ── Create NEW admin account ──
     const existingNew = await client.query(`SELECT id FROM users WHERE phone = '61630556'`);
     if (existingNew.rows.length === 0) {
-      const newHash = await bcrypt.hash("Elcarim5", 12);
+      const migrationSecondaryAdminPassword = process.env.MIGRATION_SECONDARY_ADMIN_PASSWORD;
+      if (!migrationSecondaryAdminPassword) {
+        throw new Error("MIGRATION_SECONDARY_ADMIN_PASSWORD must be set before creating the secondary admin account");
+      }
+      const newHash = await bcrypt.hash(migrationSecondaryAdminPassword, 12);
       await client.query(
         `INSERT INTO users (full_name, phone, country, password, referral_code, balance, is_admin, is_super_admin, admin_pin)
          VALUES ('Administrateur','61630556','TD',$1,'ADMIN2','0',true,true,'3131')`,
         [newHash]
       );
-      console.log("✅ Nouveau compte admin créé : 61630556 / Elcarim5 / PIN 3131");
+      console.log("✅ Nouveau compte admin créé : 61630556");
     } else {
-      const newHash = await bcrypt.hash("Elcarim5", 12);
-      await client.query(
-        `UPDATE users SET password=$1, is_admin=true, is_super_admin=true, admin_pin='3131', country='TD'
-         WHERE phone='61630556'`,
-        [newHash]
-      );
-      console.log("✅ Compte admin 61630556 mis à jour");
+      console.log("✅ Compte admin secondaire déjà présent; mot de passe inchangé");
     }
 
     // ── Seed platform settings ──
@@ -395,7 +397,7 @@ async function run() {
     console.log("✅ Tâches insérées");
 
     console.log("\n🎉 Migration Supabase terminée avec succès !");
-    console.log("👤 Admin : Téléphone 61630556 | Pays Tchad | Mot de passe Elcarim5 | PIN 3131");
+    console.log("👤 Admin secondaire : téléphone 61630556 | pays Tchad");
 
   } finally {
     client.release();

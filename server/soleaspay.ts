@@ -131,7 +131,7 @@ export async function initiatePayment(
   paymentMethod: string,
   orderId: string,
   payerName: string,
-  payerEmail: string = "customer@intel.com"
+  payerEmail: string = "customer@vestas.com"
 ): Promise<SoleaspayPaymentResponse> {
   const serviceId = getServiceId(country, paymentMethod);
   if (!serviceId) {
@@ -139,16 +139,20 @@ export async function initiatePayment(
   }
 
   const currency = getCurrency(country);
-  const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}`
-    : "https://intel.replit.app";
+  const configuredBaseUrl = process.env.APP_URL || (
+    process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : ""
+  );
+  if (!configuredBaseUrl) {
+    throw new Error("APP_URL doit être configurée pour les paiements Soleaspay");
+  }
+  const baseUrl = configuredBaseUrl.replace(/\/+$/, "");
 
   const requestBody: SoleaspayPaymentRequest = {
     wallet: formatWallet(wallet, country),
     amount,
     currency,
     order_id: orderId,
-    description: `Depot Intel #${orderId}`,
+    description: `Depot Vestas #${orderId}`,
     payer: payerName,
     payerEmail,
     successUrl: `${baseUrl}/deposit-success`,

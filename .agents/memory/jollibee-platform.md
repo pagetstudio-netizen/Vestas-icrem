@@ -24,8 +24,9 @@ description: Key architecture decisions, country config, DB setup, and image ass
 - Signup bonus is fetched dynamically from settings.signupBonus in createUser.
 - maxWithdrawalsPerDay is fetched from settings in withdrawal route.
 
-## Admin Credentials
-- Super Admin: phone 99935673, country TG, password pagetstudio, PIN 9993
+## Admin Access
+- The super admin account is created and updated by the environment-controlled seed process.
+- Keep admin credentials in deployment secrets only.
 
 ## Admin Panel Tabs
 dashboard | deposits | withdrawals | users | products | channels | countries (NEW) | giftcodes | settings

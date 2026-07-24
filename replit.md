@@ -102,12 +102,14 @@ Preferred communication style: Simple, everyday language.
 - Completed full frontend implementation with all pages and modals
 - Implemented complete backend with all API routes
 - Added database seeding for products, tasks, payment channels, and settings
-- Created super admin account (Togo +99935673 / password: pagetstudio)
+- Added the super admin account through the environment-controlled seed process
 - Removed emoji usage in favor of text country codes
 
-## Admin Credentials
-- **Super Admin**: Phone: 99935673, Country: Togo (TG), Password: pagetstudio
-- Access the admin panel from Account page when logged in as admin
+## Admin Access
+- The super admin phone is `99935673` and the country is Tchad (`TD`).
+- Set `ADMIN_PASSWORD` as a secret environment variable before the first production start.
+- Never store or commit the admin password in documentation or source control.
+- Access the admin panel from Account page when logged in as admin.
 
 ## Business Rules
 - **Signup Bonus**: 500 FCFA

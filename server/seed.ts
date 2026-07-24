@@ -34,10 +34,14 @@ export async function seed() {
 
   // Check if admin already exists
   const existingAdmin = await db.select().from(users).where(eq(users.phone, "99935673"));
-  const adminPassword = process.env.ADMIN_PASSWORD || "AAbb11##";
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (!adminPassword && process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_PASSWORD doit être configurée en production");
+  }
+  const effectiveAdminPassword = adminPassword || "development-only-admin-password";
 
   if (existingAdmin.length === 0) {
-    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+    const hashedPassword = await bcrypt.hash(effectiveAdminPassword, 12);
     await db.insert(users).values({
       fullName: "Super Admin",
       phone: "99935673",
@@ -52,7 +56,7 @@ export async function seed() {
     console.log("Super admin created");
   } else {
     // Always ensure correct country and up-to-date password
-    const hashedPassword = await bcrypt.hash(adminPassword, 12);
+    const hashedPassword = await bcrypt.hash(effectiveAdminPassword, 12);
     await db.update(users)
       .set({ country: "TD", password: hashedPassword, isAdmin: true, isSuperAdmin: true, adminPin: "9993" })
       .where(eq(users.phone, "99935673"));
